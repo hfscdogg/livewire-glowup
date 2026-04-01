@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-livewire-orange: #FF8C00;
+  --color-livewire-grey: #555555;
+  --color-luxury-black: #1A1A1A;
+  --color-luxury-cream: #FAFAF8;
+}
+
+@layer base {
+  body {
+    @apply bg-luxury-cream text-luxury-black font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+.glass-panel {
+  @apply bg-white/90 backdrop-blur-md border border-black/5 shadow-sm;
+}
+
+.luxury-button {
+  @apply bg-livewire-orange text-white px-8 py-4 rounded-full font-semibold transition-all hover:bg-livewire-grey hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.input-field {
+  @apply w-full bg-white border border-black/10 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-livewire-orange/50 transition-all text-sm;
+}
+
+/* Before/After Slider */
+.slider-handle {
+  @apply absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize z-20;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.4));
+}
+
+.slider-handle::after {
+  content: '';
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center;
+}
