@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface LeadCaptureModalProps {
   open: boolean;
-  onClose: () => void;
+  onClose: (submitted: boolean) => void;
   address: string;
 }
 
@@ -50,7 +50,7 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
             <div className="p-6 border-b border-black/5 flex items-center justify-between">
               <h3 className="font-serif text-xl">Get Your Glow Up</h3>
               <button
-                onClick={onClose}
+                onClick={() => onClose(false)}
                 className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -66,7 +66,7 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
                 <p className="text-sm text-black/50">
                   We'll be in touch to discuss bringing this vision to life.
                 </p>
-                <button onClick={onClose} className="luxury-button mt-4">
+                <button onClick={() => onClose(true)} className="luxury-button mt-4">
                   Done
                 </button>
               </div>

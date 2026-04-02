@@ -30,8 +30,13 @@ export default async function handler(req: any, res: any) {
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const base64Data = image.split(',')[1];
-    const mimeType = image.split(';')[0].split(':')[1];
+
+    // Validate and parse data URL
+    const match = image.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) {
+      return res.status(400).json({ error: 'Invalid image format' });
+    }
+    const [, mimeType, base64Data] = match;
 
     const styleGuide = stylePrompts[style] || stylePrompts.warm;
     const addressContext = address ? ` This is the property at ${address}.` : '';
@@ -55,12 +60,16 @@ Do NOT add any text, logos, watermarks, or overlays to the image.`;
           { text: prompt },
         ],
       },
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
     });
 
     let afterImage = '';
     for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        afterImage = `data:image/png;base64,${part.inlineData.data}`;
+      if (part.inlineData?.data) {
+        const responseMime = part.inlineData.mimeType || 'image/png';
+        afterImage = `data:${responseMime};base64,${part.inlineData.data}`;
         break;
       }
     }

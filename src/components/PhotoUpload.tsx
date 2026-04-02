@@ -12,6 +12,10 @@ export function PhotoUpload({ image, onImageChange }: PhotoUploadProps) {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image must be under 10 MB.');
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = () => onImageChange(reader.result as string);
     reader.readAsDataURL(file);

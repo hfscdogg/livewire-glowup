@@ -290,9 +290,9 @@ export default function App() {
       {/* Lead Capture Modal */}
       <LeadCaptureModal
         open={showLeadModal}
-        onClose={() => {
+        onClose={(submitted) => {
           setShowLeadModal(false);
-          setLeadCaptured(true);
+          if (submitted) setLeadCaptured(true);
         }}
         address={address}
       />
