@@ -1,18 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 
 const stylePrompts: Record<string, string> = {
-  warm: `Transform this house into a fully dark nighttime scene. The sky must be completely dark -- deep navy or black, with stars visible. No sunset, no dusk, no twilight glow on the horizon.
-    Add soft amber-toned architectural uplighting on the facade, warm path lighting along walkways, and gentle warm-white accent lights in landscaping.
-    The lighting should be the only source of illumination -- the house glows against the dark night. Use warm color temperatures (2700K-3000K feel).
-    Windows should have a soft interior glow. The mood should feel welcoming and cozy, like arriving home late in the evening.`,
-  dramatic: `Transform this house into a fully dark nighttime scene. The sky must be completely dark -- deep navy or black, no sunset or twilight remaining.
-    Add high-contrast architectural lighting with bold uplighting on key facade features, dramatic shadows, cool-white accent spotlights on architectural details, and sharp beam angles.
-    The lighting should pop against the dark surroundings -- this is about contrast. Mix of warm uplights and cooler accent spots.
-    The mood should feel contemporary, impressive, and cinematic. Think high-end real estate photography shot at 10 PM.`,
-  elegant: `Transform this house into a fully dark nighttime scene. The sky must be completely dark -- deep navy or black with stars, no dusk or twilight.
-    Add gentle moonlighting filtering through trees, soft architectural wash lighting on the facade, delicate path lights, and understated accent lighting.
-    The landscape should be softly lit with pools of light and shadow. Nothing overdone -- every light placed with intention.
-    The mood should feel peaceful, luxurious, and serene. Like a quiet evening with the house perfectly lit against the night sky.`,
+  warm: `TIME OF DAY: 11:00 PM, hours after sunset. Pitch-black night sky (#000814 to #001233), stars visible. The scene is DARK -- the only illumination comes from the landscape lighting fixtures and interior window glow. Everything outside the light beams is in deep shadow.
+    LIGHTING DESIGN: Soft amber architectural uplighting (2700K) washing up the facade, warm path lighting along walkways, gentle warm-white accent lights tucked into landscaping, warm interior glow through windows.
+    MOOD: Welcoming, cozy, like arriving home late in the evening. The house glows like a lantern against total darkness.`,
+  dramatic: `TIME OF DAY: 10:30 PM, hours after sunset. Pitch-black night sky (#000814 to #001233). The scene is DARK -- areas not hit by a light beam should be in deep shadow, nearly black. No ambient daylight, no sun, no sunset colors.
+    LIGHTING DESIGN: High-contrast architectural lighting with bold uplighting on key facade features, sharp beam angles, dramatic shadows, cool-white accent spotlights (3500K-4000K) picking out architectural details, mixed with warm uplights (2700K).
+    MOOD: Contemporary, cinematic, impressive. Think high-end real estate photography shot well after dark -- the lighting is the star of the shot.`,
+  elegant: `TIME OF DAY: 10:00 PM, hours after sunset. Pitch-black night sky (#000814 to #001233) with stars. The scene is DARK -- illumination comes only from designed lighting and soft moonlight. No daylight whatsoever.
+    LIGHTING DESIGN: Gentle moonlighting filtering through trees, soft architectural wash lighting on the facade, delicate path lights, understated accent lighting. Pools of light and shadow, nothing overdone.
+    MOOD: Peaceful, luxurious, serene. A quiet evening with the house perfectly lit against the night sky.`,
 };
 
 export default async function handler(req: any, res: any) {
@@ -44,11 +41,22 @@ export default async function handler(req: any, res: any) {
     const styleGuide = stylePrompts[style] || stylePrompts.warm;
     const addressContext = address ? ` This is the property at ${address}.` : '';
 
-    const prompt = `You are an expert landscape lighting designer. ${styleGuide}${addressContext}
+    const prompt = `CRITICAL INSTRUCTION -- READ FIRST: The input image was taken in daylight. You must transform it into a NIGHTTIME scene. This is the single most important requirement. The output MUST depict the exact same house at night, hours after sunset, with a black sky. If the output looks like daytime, dusk, twilight, golden hour, sunset, or "blue hour," you have FAILED the task.
 
-Maintain the EXACT architectural structure and proportions of the house. Do not alter the building shape, windows, doors, or landscaping layout.
-The sky MUST be fully dark -- nighttime, not dusk or twilight. No sunset colors on the horizon. The landscape lighting should be the primary visual focus against the dark surroundings.
-Make it look like a professional real estate photography shot taken well after dark.
+HARD REQUIREMENTS for the output image:
+- Sky: completely black or deep navy (#000814 to #001233). Stars may be visible. NO sun, NO clouds lit by sun, NO blue daytime sky, NO orange/pink sunset, NO lingering dusk glow on the horizon.
+- Ambient light level: very low. Surfaces not directly hit by a designed light fixture should fall into deep shadow.
+- No daylight illumination on the house, lawn, trees, driveway, or street. Shadows should be consistent with artificial point-source lighting, not the sun.
+- The designed landscape lighting is the PRIMARY light source and the visual focus of the image.
+
+You are an expert landscape lighting designer transforming a daytime real estate photo into an after-dark showcase of outdoor lighting design.
+
+${styleGuide}${addressContext}
+
+ARCHITECTURAL FIDELITY: Maintain the EXACT architectural structure, proportions, rooflines, windows, doors, materials, and landscaping layout of the input image. Do not alter the building shape or move any elements. Only change the time of day and add lighting.
+
+Final output should look like a professional real estate photograph shot well after dark, purpose-built to sell the lighting design.
+
 Do NOT add any text, logos, watermarks, or overlays to the image.`;
 
     const response = await ai.models.generateContent({
