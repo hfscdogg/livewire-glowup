@@ -40,20 +40,24 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onClose(false);
+          }}
         >
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
+            className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
           >
             <div className="p-6 border-b border-black/5 flex items-center justify-between">
               <h3 className="font-serif text-xl">Get Your Glow Up</h3>
               <button
                 onClick={() => onClose(false)}
-                className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
+                aria-label="Close"
+                className="w-11 h-11 -mr-2 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 active:bg-black/15 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
