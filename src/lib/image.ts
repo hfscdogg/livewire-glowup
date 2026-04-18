@@ -1,6 +1,25 @@
 const MAX_DIMENSION = 1200;
 const JPEG_QUALITY = 0.8;
 
+function isHeic(file: File): boolean {
+  const type = file.type.toLowerCase();
+  if (type === 'image/heic' || type === 'image/heif') return true;
+  const name = file.name.toLowerCase();
+  return name.endsWith('.heic') || name.endsWith('.heif');
+}
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const { default: heic2any } = await import('heic2any');
+  const converted = await heic2any({
+    blob: file,
+    toType: 'image/jpeg',
+    quality: 0.92,
+  });
+  const blob = Array.isArray(converted) ? converted[0] : converted;
+  const jpegName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+  return new File([blob], jpegName || 'photo.jpg', { type: 'image/jpeg' });
+}
+
 async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
   if (typeof createImageBitmap === 'function') {
     try {
@@ -17,13 +36,13 @@ async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
     await img.decode();
     return img;
   } finally {
-    // Revoke after decode so the bitmap/image can still render to canvas
     queueMicrotask(() => URL.revokeObjectURL(url));
   }
 }
 
 export async function compressImage(file: File): Promise<string> {
-  const source = await loadBitmap(file);
+  const working = isHeic(file) ? await convertHeicToJpeg(file) : file;
+  const source = await loadBitmap(working);
   const srcWidth = source.width;
   const srcHeight = source.height;
 
