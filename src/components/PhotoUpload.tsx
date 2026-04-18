@@ -17,7 +17,10 @@ export function PhotoUpload({ image, onImageChange }: PhotoUploadProps) {
 
   const handleFile = async (file: File) => {
     setError(null);
-    if (!file.type.startsWith('image/')) {
+    const name = file.name.toLowerCase();
+    const isHeic = name.endsWith('.heic') || name.endsWith('.heif');
+    const looksLikeImage = file.type.startsWith('image/') || isHeic;
+    if (!looksLikeImage) {
       setError('Please choose an image file.');
       return;
     }
@@ -107,7 +110,7 @@ export function PhotoUpload({ image, onImageChange }: PhotoUploadProps) {
             e.target.value = '';
           }}
           className="hidden"
-          accept="image/*"
+          accept="image/*,.heic,.heif"
         />
       </div>
       {error && (
