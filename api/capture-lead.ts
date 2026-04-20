@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { supabase } from './lib/supabase';
+import { supabase } from './lib/supabase.js';
 
 function esc(str: string): string {
   return str
