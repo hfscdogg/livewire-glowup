@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import Anthropic from '@anthropic-ai/sdk';
-import { supabase } from './lib/supabase';
+import { supabase } from './lib/supabase.js';
 
 const stylePrompts: Record<string, string> = {
   warm: `Warm, inviting outdoor lighting with a cozy amber glow. The house should look beautiful and welcoming at night -- like the best version of "coming home late in the evening." Soft warm light on the house, a lit walkway, and a gentle glow from the windows.`,
