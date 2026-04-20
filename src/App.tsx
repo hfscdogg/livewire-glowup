@@ -1,16 +1,11 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, Moon, Download, Share2, Mail, ArrowLeft } from 'lucide-react';
+import { Sparkles, Loader2, Moon, Download, Share2, Mail, ArrowLeft, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header, Logo } from './components/Header';
 import { PhotoUpload } from './components/PhotoUpload';
 import { StylePicker, type LightingStyle } from './components/StylePicker';
 import { BeforeAfterSlider } from './components/BeforeAfterSlider';
 import { LeadCaptureModal } from './components/LeadCaptureModal';
-
-interface GenerationResult {
-  afterImage: string;
-  description: string;
-}
 
 export default function App() {
   // Input state
@@ -21,17 +16,20 @@ export default function App() {
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState('');
-  const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Lead capture
+  // Lead + reveal state
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [description, setDescription] = useState<string | null>(null);
+  const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
   const [showLeadModal, setShowLeadModal] = useState(false);
-  const [leadCaptured, setLeadCaptured] = useState(false);
 
   const canGenerate = !!image;
 
   const reset = () => {
-    setResult(null);
+    setLeadId(null);
+    setDescription(null);
+    setAfterImageUrl(null);
     setError(null);
     setProgress('');
   };
@@ -41,10 +39,11 @@ export default function App() {
 
     setIsGenerating(true);
     setError(null);
-    setResult(null);
+    setLeadId(null);
+    setDescription(null);
+    setAfterImageUrl(null);
 
     try {
-      // Step 1: Generate the nighttime image via Gemini
       setProgress('Analyzing your home\'s architecture...');
 
       const imageRes = await fetch('/api/generate-image', {
@@ -58,25 +57,9 @@ export default function App() {
         throw new Error(errData.error || 'Image generation failed');
       }
 
-      const { afterImage } = await imageRes.json();
-
-      // Step 2: Generate copy description via Claude
-      setProgress('Crafting your lighting narrative...');
-
-      const copyRes = await fetch('/api/generate-copy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ style, address }),
-      });
-
-      if (!copyRes.ok) {
-        const errData = await copyRes.json().catch(() => ({}));
-        throw new Error(errData.error || 'Copy generation failed');
-      }
-
-      const { description } = await copyRes.json();
-
-      setResult({ afterImage, description });
+      const data = await imageRes.json();
+      setLeadId(data.leadId);
+      setDescription(data.description);
     } catch (err: any) {
       console.error('Generation error:', err);
       setError(err.message || 'Something went wrong. Please try again.');
@@ -86,33 +69,34 @@ export default function App() {
     }
   };
 
+  const handleReveal = (url: string) => {
+    setAfterImageUrl(url);
+    setShowLeadModal(false);
+  };
+
   const handleDownload = () => {
-    if (!leadCaptured) {
-      setShowLeadModal(true);
-      return;
-    }
-    if (!result?.afterImage) return;
+    if (!afterImageUrl) return;
     const link = document.createElement('a');
-    link.href = result.afterImage;
+    link.href = afterImageUrl;
     link.download = `livewire-glowup-${Date.now()}.png`;
+    link.target = '_blank';
     link.click();
   };
 
   const handleShare = async () => {
-    if (!leadCaptured) {
-      setShowLeadModal(true);
-      return;
-    }
-    if (navigator.share && result?.afterImage) {
-      try {
-        const blob = await fetch(result.afterImage).then((r) => r.blob());
-        const file = new File([blob], 'livewire-glowup.png', { type: 'image/png' });
-        await navigator.share({ title: 'My Home Glow Up by Livewire', files: [file] });
-      } catch {
-        // User cancelled or share failed — ignore
-      }
+    if (!afterImageUrl || !navigator.share) return;
+    try {
+      const blob = await fetch(afterImageUrl).then((r) => r.blob());
+      const file = new File([blob], 'livewire-glowup.png', { type: 'image/png' });
+      await navigator.share({ title: 'My Home Glow Up by Livewire', files: [file] });
+    } catch {
+      // User cancelled or share failed
     }
   };
+
+  // Determine which view to show
+  const isGateStage = !!leadId && !afterImageUrl;
+  const isResultStage = !!leadId && !!afterImageUrl;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -120,7 +104,7 @@ export default function App() {
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
         <AnimatePresence mode="wait">
-          {!result && !isGenerating ? (
+          {!leadId && !isGenerating ? (
             // ===== INPUT VIEW =====
             <motion.div
               key="input"
@@ -209,8 +193,67 @@ export default function App() {
               </div>
             </motion.div>
 
-          ) : result ? (
-            // ===== RESULTS VIEW =====
+          ) : isGateStage ? (
+            // ===== GATE STAGE — email required to reveal =====
+            <motion.div
+              key="gate"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              {/* Back button */}
+              <button
+                onClick={reset}
+                className="flex items-center gap-2 text-sm font-semibold text-livewire-orange hover:text-livewire-grey transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Try Another Photo
+              </button>
+
+              {/* Blurred teaser */}
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-black/5">
+                {image && (
+                  <img
+                    src={image}
+                    alt="Your home"
+                    className="absolute inset-0 w-full h-full object-cover blur-[20px] scale-105 opacity-60"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                  <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-4 border border-white/20">
+                    <Lock className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-serif text-white mb-2">
+                    Your Glow Up is Ready
+                  </h3>
+                  <p className="text-white/70 text-sm max-w-sm">
+                    Enter your email below to reveal your personalized lighting design.
+                  </p>
+                </div>
+              </div>
+
+              {/* Description (shown to build desire) */}
+              {description && (
+                <div className="glass-panel rounded-2xl p-6 sm:p-8">
+                  <h2 className="font-serif text-xl sm:text-2xl mb-3">Your Lighting Design</h2>
+                  <p className="text-sm sm:text-base text-black/60 leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+              )}
+
+              {/* CTA to reveal */}
+              <button
+                onClick={() => setShowLeadModal(true)}
+                className="luxury-button w-full flex items-center justify-center gap-2 text-base"
+              >
+                <Sparkles className="w-5 h-5" />
+                Reveal Your Glow Up
+              </button>
+            </motion.div>
+
+          ) : isResultStage ? (
+            // ===== RESULTS VIEW — fully unlocked =====
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 20 }}
@@ -226,29 +269,30 @@ export default function App() {
               </button>
 
               {/* Before/After Slider */}
-              {image && (
+              {image && afterImageUrl && (
                 <BeforeAfterSlider
                   beforeImage={image}
-                  afterImage={result.afterImage}
+                  afterImage={afterImageUrl}
                 />
               )}
 
               {/* Description */}
-              <div className="glass-panel rounded-2xl p-6 sm:p-8">
-                <h2 className="font-serif text-xl sm:text-2xl mb-3">Your Lighting Design</h2>
-                <p className="text-sm sm:text-base text-black/60 leading-relaxed">
-                  {result.description}
-                </p>
-              </div>
+              {description && (
+                <div className="glass-panel rounded-2xl p-6 sm:p-8">
+                  <h2 className="font-serif text-xl sm:text-2xl mb-3">Your Lighting Design</h2>
+                  <p className="text-sm sm:text-base text-black/60 leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+              )}
 
-              {/* Action buttons */}
+              {/* Action buttons — no gating needed */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleDownload}
                   className="luxury-button flex-1 flex items-center justify-center gap-2"
                 >
-                  <Download className="w-4 h-4" />
-                  {leadCaptured ? 'Download Image' : 'Download Full Resolution'}
+                  <Download className="w-4 h-4" /> Download Image
                 </button>
                 <button
                   onClick={handleShare}
@@ -258,10 +302,6 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => {
-                    if (!leadCaptured) {
-                      setShowLeadModal(true);
-                      return;
-                    }
                     window.location.href = `mailto:?subject=Check out my home's glow up!&body=See what my home could look like with Livewire landscape lighting.`;
                   }}
                   className="flex-1 px-8 py-4 rounded-full border-2 border-black/10 font-semibold hover:bg-black/5 transition-all flex items-center justify-center gap-2"
@@ -290,11 +330,9 @@ export default function App() {
       {/* Lead Capture Modal */}
       <LeadCaptureModal
         open={showLeadModal}
-        onClose={(submitted) => {
-          setShowLeadModal(false);
-          if (submitted) setLeadCaptured(true);
-        }}
-        address={address}
+        leadId={leadId}
+        onReveal={handleReveal}
+        onClose={() => setShowLeadModal(false)}
       />
 
       {/* Footer */}
