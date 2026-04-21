@@ -53,7 +53,7 @@ export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptur
             className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
           >
             <div className="p-6 border-b border-black/5">
-              <h3 className="font-serif text-xl">Reveal Your Glow Up</h3>
+              <h3 className="font-serif text-xl">Get Your Glow Up</h3>
             </div>
 
             {status === 'sent' ? (
@@ -63,13 +63,13 @@ export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptur
                 </div>
                 <h4 className="font-serif text-xl">You're all set!</h4>
                 <p className="text-sm text-black/50">
-                  Revealing your personalized lighting design...
+                  Check your inbox — your glow up is on the way!
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <p className="text-sm text-black/50 mb-2">
-                  Enter your info to reveal your personalized lighting design and connect with our team.
+                  We'll send your lighting design straight to your inbox.
                 </p>
 
                 <div>
@@ -119,7 +119,7 @@ export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptur
                   {status === 'sending' ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
                   ) : (
-                    <><Send className="w-4 h-4" /> Reveal My Glow Up</>
+                    <><Send className="w-4 h-4" /> Send My Glow Up</>
                   )}
                 </button>
 

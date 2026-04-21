@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, Moon, Download, Share2, Mail, ArrowLeft, Lock } from 'lucide-react';
+import { Sparkles, Loader2, Moon, Download, Share2, Mail, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header, Logo } from './components/Header';
 import { PhotoUpload } from './components/PhotoUpload';
@@ -221,13 +221,13 @@ export default function App() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
                   <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-4 border border-white/20">
-                    <Lock className="w-7 h-7 text-white" />
+                    <Mail className="w-7 h-7 text-white" />
                   </div>
                   <h3 className="text-2xl sm:text-3xl font-serif text-white mb-2">
                     Your Glow Up is Ready
                   </h3>
                   <p className="text-white/70 text-sm max-w-sm">
-                    Enter your email below to reveal your personalized lighting design.
+                    Enter your email and we'll send it right over.
                   </p>
                 </div>
               </div>
@@ -247,8 +247,8 @@ export default function App() {
                 onClick={() => setShowLeadModal(true)}
                 className="luxury-button w-full flex items-center justify-center gap-2 text-base"
               >
-                <Sparkles className="w-5 h-5" />
-                Reveal Your Glow Up
+                <Mail className="w-5 h-5" />
+                Email Me My Glow Up
               </button>
             </motion.div>
 
