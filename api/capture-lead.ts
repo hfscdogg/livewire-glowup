@@ -38,25 +38,33 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Failed to update lead record' });
   }
 
-  // Send notification email to sales (non-blocking)
+  type EmailStatus = {
+    userSent: boolean;
+    salesSent: boolean;
+    skipped?: string;
+    userError?: string;
+    salesError?: string;
+  };
+  const emailStatus: EmailStatus = { userSent: false, salesSent: false };
+
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey) {
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY not configured; skipping email send');
+    emailStatus.skipped = 'RESEND_API_KEY not configured';
+  } else {
     const safeName = esc(name);
     const safeEmail = esc(email);
     const safePhone = phone ? esc(phone) : '';
     const safeAddress = lead.address ? esc(lead.address) : '';
 
-    try {
-      const resend = new Resend(apiKey);
+    const resend = new Resend(apiKey);
 
-      // Send both emails in parallel
-      await Promise.all([
-        // Email to the user with their glow-up
-        resend.emails.send({
-          from: 'Livewire Lighting <hello@getlivewire.com>',
-          to: email,
-          subject: `${name.split(' ')[0]}, here's your Glow Up ✨`,
-          html: `
+    const [userResult, salesResult] = await Promise.allSettled([
+      resend.emails.send({
+        from: 'Livewire Lighting <hello@getlivewire.com>',
+        to: email,
+        subject: `${name.split(' ')[0]}, here's your Glow Up ✨`,
+        html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="text-align: center; padding: 32px 0 16px;">
                 <h1 style="color: #1a1a1a; font-size: 28px; margin: 0;">Your Home, in a New Light</h1>
@@ -83,47 +91,70 @@ export default async function handler(req: any, res: any) {
               </div>
             </div>
           `,
-        }),
+      }),
+      resend.emails.send({
+        from: 'Livewire Glow Up <notifications@getlivewire.com>',
+        to: 'sales@getlivewire.com',
+        subject: `New Glow Up Lead: ${safeName}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px;">
+            <h2 style="color: #FF8C00;">New Glow Up Lead</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #555;">Name</td>
+                <td style="padding: 8px 0;">${safeName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #555;">Email</td>
+                <td style="padding: 8px 0;"><a href="mailto:${safeEmail}">${safeEmail}</a></td>
+              </tr>
+              ${safePhone ? `<tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #555;">Phone</td>
+                <td style="padding: 8px 0;"><a href="tel:${safePhone}">${safePhone}</a></td>
+              </tr>` : ''}
+              ${safeAddress ? `<tr>
+                <td style="padding: 8px 0; font-weight: bold; color: #555;">Address</td>
+                <td style="padding: 8px 0;">${safeAddress}</td>
+              </tr>` : ''}
+            </table>
+            <h3 style="margin-top: 24px; color: #333;">Before &amp; After</h3>
+            <p><a href="${esc(lead.before_image_url)}">Before Image</a> | <a href="${esc(lead.after_image_url)}">After Image</a></p>
+            <p style="color: #999; font-size: 12px; margin-top: 20px;">
+              This lead came from the Livewire Glow Up tool.
+            </p>
+          </div>
+        `,
+      }),
+    ]);
 
-        // Notification to sales team
-        resend.emails.send({
-          from: 'Livewire Glow Up <notifications@getlivewire.com>',
-          to: 'sales@getlivewire.com',
-          subject: `New Glow Up Lead: ${safeName}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px;">
-              <h2 style="color: #FF8C00;">New Glow Up Lead</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #555;">Name</td>
-                  <td style="padding: 8px 0;">${safeName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #555;">Email</td>
-                  <td style="padding: 8px 0;"><a href="mailto:${safeEmail}">${safeEmail}</a></td>
-                </tr>
-                ${safePhone ? `<tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #555;">Phone</td>
-                  <td style="padding: 8px 0;"><a href="tel:${safePhone}">${safePhone}</a></td>
-                </tr>` : ''}
-                ${safeAddress ? `<tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #555;">Address</td>
-                  <td style="padding: 8px 0;">${safeAddress}</td>
-                </tr>` : ''}
-              </table>
-              <h3 style="margin-top: 24px; color: #333;">Before &amp; After</h3>
-              <p><a href="${esc(lead.before_image_url)}">Before Image</a> | <a href="${esc(lead.after_image_url)}">After Image</a></p>
-              <p style="color: #999; font-size: 12px; margin-top: 20px;">
-                This lead came from the Livewire Glow Up tool.
-              </p>
-            </div>
-          `,
-        }),
-      ]);
-    } catch (err: any) {
-      console.error('Email send error:', err);
+    if (userResult.status === 'fulfilled') {
+      const { data, error } = userResult.value as { data: { id: string } | null; error: { message?: string; name?: string } | null };
+      if (error) {
+        console.error('User email Resend error:', error);
+        emailStatus.userError = error.message || error.name || 'Resend rejected the send';
+      } else {
+        emailStatus.userSent = true;
+        console.log('User email sent:', data?.id);
+      }
+    } else {
+      console.error('User email threw:', userResult.reason);
+      emailStatus.userError = userResult.reason?.message || String(userResult.reason);
+    }
+
+    if (salesResult.status === 'fulfilled') {
+      const { data, error } = salesResult.value as { data: { id: string } | null; error: { message?: string; name?: string } | null };
+      if (error) {
+        console.error('Sales email Resend error:', error);
+        emailStatus.salesError = error.message || error.name || 'Resend rejected the send';
+      } else {
+        emailStatus.salesSent = true;
+        console.log('Sales email sent:', data?.id);
+      }
+    } else {
+      console.error('Sales email threw:', salesResult.reason);
+      emailStatus.salesError = salesResult.reason?.message || String(salesResult.reason);
     }
   }
 
-  return res.status(200).json({ ok: true, afterImageUrl: lead.after_image_url });
+  return res.status(200).json({ ok: true, afterImageUrl: lead.after_image_url, emailStatus });
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, CheckCircle2, Send } from 'lucide-react';
+import { Loader2, CheckCircle2, Send, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface LeadCaptureModalProps {
@@ -9,11 +9,20 @@ interface LeadCaptureModalProps {
   onClose: () => void;
 }
 
+type EmailStatus = {
+  userSent: boolean;
+  salesSent: boolean;
+  skipped?: string;
+  userError?: string;
+  salesError?: string;
+};
+
 export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptureModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailStatus, setEmailStatus] = useState<EmailStatus | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,14 +37,24 @@ export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptur
       });
       if (!res.ok) throw new Error('Failed to submit');
       const data = await res.json();
+      console.log('capture-lead response:', data);
+      setEmailStatus(data.emailStatus ?? null);
       setStatus('sent');
       if (data.afterImageUrl) {
-        setTimeout(() => onReveal(data.afterImageUrl), 1200);
+        setTimeout(() => onReveal(data.afterImageUrl), 2500);
       }
     } catch {
       setStatus('error');
     }
   };
+
+  const emailProblem = emailStatus
+    ? emailStatus.skipped
+      ? `Email service not configured on this deployment (${emailStatus.skipped}).`
+      : emailStatus.userError
+      ? `Email failed to send: ${emailStatus.userError}`
+      : null
+    : null;
 
   return (
     <AnimatePresence>
@@ -58,13 +77,30 @@ export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptur
 
             {status === 'sent' ? (
               <div className="p-8 text-center space-y-4">
-                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-8 h-8 text-green-500" />
-                </div>
-                <h4 className="font-serif text-xl">You're all set!</h4>
-                <p className="text-sm text-black/50">
-                  Check your inbox — your glow up is on the way!
-                </p>
+                {emailProblem ? (
+                  <>
+                    <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto">
+                      <AlertTriangle className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h4 className="font-serif text-xl">Lead saved — but email didn't send</h4>
+                    <p className="text-sm text-black/60 text-left bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      {emailProblem}
+                    </p>
+                    <p className="text-xs text-black/40">
+                      Your glow up will still reveal in a moment. Check the Vercel logs and Resend dashboard for details.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h4 className="font-serif text-xl">You're all set!</h4>
+                    <p className="text-sm text-black/50">
+                      Check your inbox — your glow up is on the way!
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
