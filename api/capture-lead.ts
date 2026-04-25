@@ -74,7 +74,7 @@ export default async function handler(req: any, res: any) {
                 <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
                   Love what you see? Let's talk about making it real.
                 </p>
-                <a href="https://getlivewire.com/contact" style="background: #FF8C00; color: white; padding: 14px 32px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                <a href="https://getlivewire.zohobookings.com/#/3987741000011211046" style="background: #FF8C00; color: white; padding: 14px 32px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 15px;">
                   Schedule a Free Consultation
                 </a>
               </div>

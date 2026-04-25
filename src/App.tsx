@@ -314,7 +314,7 @@ export default function App() {
               <div className="text-center py-6 border-t border-black/5">
                 <p className="text-sm text-black/40 mb-3">Love what you see?</p>
                 <a
-                  href="https://getlivewire.com/contact"
+                  href="https://getlivewire.zohobookings.com/#/3987741000011211046"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="luxury-button inline-flex items-center gap-2"
