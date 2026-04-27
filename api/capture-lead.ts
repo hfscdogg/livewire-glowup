@@ -88,7 +88,7 @@ export default async function handler(req: any, res: any) {
         // Notification to sales team
         resend.emails.send({
           from: 'Livewire Glow Up <notifications@getlivewire.com>',
-          to: 'sales@getlivewire.com',
+          to: 'support@getlivewire.zohodesk.com',
           subject: `New Glow Up Lead: ${safeName}`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px;">
