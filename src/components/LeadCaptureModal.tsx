@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { X, Loader2, CheckCircle2, Send } from 'lucide-react';
+import { Loader2, CheckCircle2, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface LeadCaptureModalProps {
   open: boolean;
-  onClose: (submitted: boolean) => void;
-  address: string;
+  leadId: string | null;
+  onReveal: (afterImageUrl: string) => void;
+  onClose: () => void;
 }
 
-export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalProps) {
+export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptureModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -16,17 +17,21 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !leadId) return;
 
     setStatus('sending');
     try {
       const res = await fetch('/api/capture-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, address }),
+        body: JSON.stringify({ leadId, name, email, phone }),
       });
       if (!res.ok) throw new Error('Failed to submit');
+      const data = await res.json();
       setStatus('sent');
+      if (data.afterImageUrl) {
+        setTimeout(() => onReveal(data.afterImageUrl), 1200);
+      }
     } catch {
       setStatus('error');
     }
@@ -41,7 +46,7 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6"
           onClick={(e) => {
-            if (e.target === e.currentTarget) onClose(false);
+            if (e.target === e.currentTarget) onClose();
           }}
         >
           <motion.div
@@ -50,15 +55,8 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
             exit={{ y: 100, opacity: 0 }}
             className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
           >
-            <div className="p-6 border-b border-black/5 flex items-center justify-between">
+            <div className="p-6 border-b border-black/5">
               <h3 className="font-serif text-xl">Get Your Glow Up</h3>
-              <button
-                onClick={() => onClose(false)}
-                aria-label="Close"
-                className="w-11 h-11 -mr-2 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 active:bg-black/15 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
             {status === 'sent' ? (
@@ -68,16 +66,13 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
                 </div>
                 <h4 className="font-serif text-xl">You're all set!</h4>
                 <p className="text-sm text-black/50">
-                  We'll be in touch to discuss bringing this vision to life.
+                  Check your inbox — your glow up is on the way!
                 </p>
-                <button onClick={() => onClose(true)} className="luxury-button mt-4">
-                  Done
-                </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <p className="text-sm text-black/50 mb-2">
-                  Enter your info to download the full-resolution visualization and connect with our lighting team.
+                  We'll send your lighting design straight to your inbox.
                 </p>
 
                 <div>
@@ -127,8 +122,16 @@ export function LeadCaptureModal({ open, onClose, address }: LeadCaptureModalPro
                   {status === 'sending' ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
                   ) : (
-                    <><Send className="w-4 h-4" /> Get My Glow Up</>
+                    <><Send className="w-4 h-4" /> Send My Glow Up</>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full text-center text-sm text-black/30 hover:text-black/50 transition-colors mt-2"
+                >
+                  Maybe later
                 </button>
               </form>
             )}
