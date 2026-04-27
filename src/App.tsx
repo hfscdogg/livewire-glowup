@@ -263,7 +263,7 @@ export default function App() {
               {/* Back button */}
               <button
                 onClick={reset}
-                className="flex items-center gap-2 text-sm font-semibold text-livewire-orange hover:text-livewire-grey transition-colors"
+                className="inline-flex items-center gap-2 -ml-2 px-2 py-3 min-h-11 text-sm font-semibold text-livewire-orange hover:text-livewire-grey transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Try Another Photo
               </button>
@@ -336,7 +336,7 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-black/5 py-8 mt-auto">
+      <footer className="border-t border-black/5 py-8 mt-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="opacity-30 grayscale">
             <Logo className="h-5" />

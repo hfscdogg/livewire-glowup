@@ -45,12 +45,15 @@ export function LeadCaptureModal({ open, leadId, onReveal, onClose }: LeadCaptur
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onClose();
+          }}
         >
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
+            className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
           >
             <div className="p-6 border-b border-black/5">
               <h3 className="font-serif text-xl">Get Your Glow Up</h3>
