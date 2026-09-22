@@ -38,9 +38,16 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Failed to update lead record' });
   }
 
-  // Send notification email to sales (non-blocking)
+  // Send both messages as one idempotent batch so a retry cannot
+  // duplicate one recipient after the other recipient failed.
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey) {
+  let emailAccepted = false;
+  let emailError: string | undefined;
+
+  if (!apiKey) {
+    emailError = 'not_configured';
+    console.error('Resend is not configured');
+  } else {
     const safeName = esc(name);
     const safeEmail = esc(email);
     const safePhone = phone ? esc(phone) : '';
@@ -49,10 +56,9 @@ export default async function handler(req: any, res: any) {
     try {
       const resend = new Resend(apiKey);
 
-      // Send both emails in parallel
-      await Promise.all([
+      const result = await resend.batch.send([
         // Email to the user with their glow-up
-        resend.emails.send({
+        {
           from: 'Livewire Lighting <hello@getlivewire.com>',
           to: email,
           subject: `${name.split(' ')[0]}, here's your Glow Up ✨`,
@@ -83,10 +89,10 @@ export default async function handler(req: any, res: any) {
               </div>
             </div>
           `,
-        }),
+        },
 
         // Notification to sales team
-        resend.emails.send({
+        {
           from: 'Livewire Glow Up <notifications@getlivewire.com>',
           to: 'support@getlivewire.zohodesk.com',
           subject: `New Glow Up Lead: ${safeName}`,
@@ -118,12 +124,34 @@ export default async function handler(req: any, res: any) {
               </p>
             </div>
           `,
-        }),
-      ]);
+        },
+      ], { idempotencyKey: `glowup:${leadId}:capture-v1` });
+
+      if (result.error) {
+        emailError = result.error.name || 'provider_error';
+        console.error('Resend batch rejected:', {
+          name: result.error.name,
+          message: result.error.message,
+        });
+      } else if (!result.data?.data || result.data.data.length !== 2) {
+        emailError = 'invalid_provider_response';
+        console.error('Resend returned an invalid batch response');
+      } else {
+        emailAccepted = true;
+      }
     } catch (err: any) {
-      console.error('Email send error:', err);
+      emailError = 'transport_error';
+      console.error('Resend transport error:', {
+        name: err?.name || 'Error',
+        message: err?.message || 'Unknown transport failure',
+      });
     }
   }
 
-  return res.status(200).json({ ok: true, afterImageUrl: lead.after_image_url });
+  return res.status(200).json({
+    ok: true,
+    afterImageUrl: lead.after_image_url,
+    emailAccepted,
+    ...(emailError ? { emailError } : {}),
+  });
 }
